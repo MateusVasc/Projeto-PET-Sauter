@@ -10,7 +10,7 @@ class PredictionsManager:
             print(f"Erro ao conectar ao banco de dados: {e}")
             self.db = None
     
-    def save_predictions(self, df_pred):
+    def save_predictions(self, df, df_pred):
         if self.db is None:
             print("Conexão com o banco de dados não está estabelecida.")
             return
@@ -19,9 +19,11 @@ class PredictionsManager:
 
         try:
             for name in table_names:
+                curr_df = df[df['unique_id'] == name]
                 curr_pred = df_pred[df_pred['unique_id'] == name]
 
-                curr_pred.to_sql(name, self.db, index=False, if_exists='replace')
+                curr_df.to_sql(name, self.db, index=False, if_exists='replace')
+                curr_pred.to_sql(f'pred_{name}', self.db, index=False, if_exists='replace')
             
             print(f'Todas as previsões foram salvas em tabelas chamadas: {table_names}')
         except sqlite3.Error as e:
@@ -34,13 +36,20 @@ class PredictionsManager:
             print("Conexão com o banco de dados não está estabelecida.")
             return None
         
+        pred_name = f'pred_{series_name}'
+
         query_string = f'SELECT * FROM {series_name}'
+        query_string_pred = f'SELECT * FROM {pred_name}'
 
         try:
-            series_pred = pd.read_sql_query(query_string, self.db)
+            series = pd.read_sql_query(query_string, self.db)
+            series['ds'] = pd.to_datetime(series['ds'])
+            
+            series_pred = pd.read_sql_query(query_string_pred, self.db)
             series_pred['ds'] = pd.to_datetime(series_pred['ds'])
-            print(f'Previsões recuperadas com sucesso para: {series_name}')
-            return series_pred
+            
+            return series, series_pred
+        
         except pd.io.sql.DatabaseError as e:
             print(f"Erro ao executar a consulta: {e}")
             return None
