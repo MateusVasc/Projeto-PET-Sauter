@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 from PredictionsManager import PredictionsManager
 
 def plot_prediction(pred_name, pred_manager):
@@ -8,23 +7,24 @@ def plot_prediction(pred_name, pred_manager):
     
     df_original, df_pred = pred_manager.get_prediction(pred_name)
 
-    df_original['ds'] = pd.to_datetime(df_original['ds'])
-    df_pred['ds'] = pd.to_datetime(df_pred['ds'])
+    prediction_model_name = 'AutoARIMA'
 
-    df_combined = pd.merge(df_original[['ds', 'y']], df_pred[['ds', 'LinearRegression']], on='ds', how='outer', suffixes=('_orig', '_pred'))
+    df_combined = pd.merge(df_original[['ds', 'y']], df_pred[['ds', prediction_model_name]], on='ds', how='outer', suffixes=('_orig', '_pred')).set_index('ds')
 
-    df_pred.sort_values(by='ds', inplace=True)
+    df_combined.rename(columns = {'y':'Vendas', prediction_model_name : 'Previsão'}, inplace=True)
 
-    st.line_chart(df_combined.set_index('ds'), width=0, height=0)
+    st.line_chart(df_combined, width=0, height=0)
 
 def main():
-    st.title("User Dashboard")
+    st.title("Dashboard")
     st.sidebar.title("Menu")
 
     pred_manager = PredictionsManager('predictions.db')
 
-    option = st.sidebar.selectbox("Select a section", pred_manager.get_df_names())
-    
+    list_dfs = pred_manager.get_df_names()
+
+    option = st.sidebar.selectbox("Selecione uma Base de Dados para previsão", list_dfs)
+
     plot_prediction(option, pred_manager)
 
 if __name__ == "__main__":

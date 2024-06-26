@@ -5,7 +5,6 @@ class PredictionsManager:
     def __init__(self, db_path):
         try:
             self.db = sqlite3.connect(db_path)
-            print(f'Banco de dados conectado: {db_path}')
         except sqlite3.Error as e:
             print(f"Erro ao conectar ao banco de dados: {e}")
             self.db = None
@@ -58,12 +57,11 @@ class PredictionsManager:
             return None
 
     def get_df_names(self):
-        cursor = self.db.cursor()  # Create a cursor object
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")  # Execute query to get table names
+        cursor = self.db.cursor() 
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
 
-        names = cursor.fetchall()  # Fetch all results, will be a list of tuples
+        names = cursor.fetchall() 
 
-        # Extract and filter table names
         table_names = [name[0] for name in names if 'pred' not in name[0]]
         
         return table_names 
