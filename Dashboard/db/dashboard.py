@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from PredictionsManager import PredictionsManager
 
-def plot_prediction(pred_name):
+def plot_prediction(pred_name, pred_manager):
     pred_manager = PredictionsManager('predictions.db')
     
     df_original, df_pred = pred_manager.get_prediction(pred_name)
@@ -20,10 +20,12 @@ def plot_prediction(pred_name):
 def main():
     st.title("User Dashboard")
     st.sidebar.title("Menu")
+
+    pred_manager = PredictionsManager('predictions.db')
+
+    option = st.sidebar.selectbox("Select a section", pred_manager.get_df_names())
     
-    option = st.sidebar.selectbox("Select a section", ["General", "Hobbies"])
-    
-    plot_prediction(str.lower(option))
+    plot_prediction(option, pred_manager)
 
 if __name__ == "__main__":
     main()

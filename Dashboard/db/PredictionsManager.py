@@ -57,6 +57,17 @@ class PredictionsManager:
             print(f"Erro inesperado: {e}")
             return None
 
+    def get_df_names(self):
+        cursor = self.db.cursor()  # Create a cursor object
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")  # Execute query to get table names
+
+        names = cursor.fetchall()  # Fetch all results, will be a list of tuples
+
+        # Extract and filter table names
+        table_names = [name[0] for name in names if 'pred' not in name[0]]
+        
+        return table_names 
+
     def close_connection(self):
         if self.db:
             try:
