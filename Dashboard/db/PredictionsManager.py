@@ -69,7 +69,7 @@ class PredictionsManager:
 
         names = cursor.fetchall() 
 
-        table_names = [name[0] for name in names if 'pred' not in name[0]]
+        table_names = [name[0] for name in names if not (name[0].startswith('test_') or name[0].startswith('pred'))]
         
         return table_names 
 

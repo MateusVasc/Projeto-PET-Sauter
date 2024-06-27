@@ -14,6 +14,8 @@ def plot_prediction(pred_name, pred_manager):
     df_combined = pd.merge(df_original[['ds', 'y']], df_pred[['ds', 'XGBRegressor']], on='ds', how='outer', suffixes=('_orig', '_pred'))
     df_combined = pd.merge(df_combined, df_test[['ds', 'XGBRegressor']], on='ds', how='outer', suffixes=('', '_test'))
 
+    df_combined.set_index('ds', inplace=True)
+
     st.line_chart(df_combined, width=0, height=0)
 
 def main():
