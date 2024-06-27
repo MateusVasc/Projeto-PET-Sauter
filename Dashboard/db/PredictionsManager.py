@@ -39,9 +39,11 @@ class PredictionsManager:
             return None
         
         pred_name = f'pred_{series_name}'
+        test_name = f'test_{series_name}'
 
         query_string = f'SELECT * FROM {series_name}'
         query_string_pred = f'SELECT * FROM {pred_name}'
+        query_string_test = f'SELECT * FROM {test_name}'
 
         try:
             series = pd.read_sql_query(query_string, self.db)
@@ -49,8 +51,11 @@ class PredictionsManager:
             
             series_pred = pd.read_sql_query(query_string_pred, self.db)
             series_pred['ds'] = pd.to_datetime(series_pred['ds'])
+
+            series_test = pd.read_sql_query(query_string_test, self.db)
+            series_test['ds'] = pd.to_datetime(series_test['ds'])
             
-            return series, series_pred
+            return series, series_pred, series_test
         
         except pd.io.sql.DatabaseError as e:
             print(f"Erro ao executar a consulta: {e}")
