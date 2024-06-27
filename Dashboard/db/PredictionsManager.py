@@ -10,7 +10,7 @@ class PredictionsManager:
             print(f"Erro ao conectar ao banco de dados: {e}")
             self.db = None
     
-    def save_predictions(self, df, df_pred):
+    def save_predictions(self, df, df_pred, df_test):
         if self.db is None:
             print("Conexão com o banco de dados não está estabelecida.")
             return
@@ -20,9 +20,11 @@ class PredictionsManager:
         try:
             for name in table_names:
                 curr_df = df[df['unique_id'] == name]
+                curr_test = df_test[df_test['unique_id'] == name]
                 curr_pred = df_pred[df_pred['unique_id'] == name]
 
                 curr_df.to_sql(name, self.db, index=False, if_exists='replace')
+                curr_test.to_sql(f'test_{name}', self.db, index=False, if_exists='replace')
                 curr_pred.to_sql(f'pred_{name}', self.db, index=False, if_exists='replace')
             
             print(f'Todas as previsões foram salvas em tabelas chamadas: {table_names}')
