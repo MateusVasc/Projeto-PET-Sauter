@@ -82,3 +82,33 @@ class PredictionsManager:
                 print(f"Erro ao fechar a conexão: {e}")
         else:
             print('Nenhuma conexão para fechar')
+
+    def add_table(self, df, table_name):
+        if self.db is None:
+            print("Conexão com o banco de dados não está estabelecida.")
+            return
+        
+        try:
+            df.to_sql(table_name, self.db, index=False, if_exists='replace')
+            print(f"Tabela '{table_name}' adicionada com sucesso.")
+        except sqlite3.Error as e:
+            print(f"Erro ao adicionar a tabela: {e}")
+        except Exception as e:
+            print(f"Erro inesperado: {e}")
+
+    def get_table(self, table_name):
+        if self.db is None:
+            print("Conexão com o banco de dados não está estabelecida.")
+            return None
+        
+        query_string = f'SELECT * FROM {table_name}'
+        
+        try:
+            df = pd.read_sql_query(query_string, self.db)
+            return df
+        except pd.io.sql.DatabaseError as e:
+            print(f"Erro ao executar a consulta: {e}")
+            return None
+        except Exception as e:
+            print(f"Erro inesperado: {e}")
+            return None
