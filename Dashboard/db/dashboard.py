@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from PredictionsManager import PredictionsManager
 
-def plot_prediction(pred_name, pred_manager):
+def plot_prediction(pred_name, model_name, pred_manager):
     pred_manager = PredictionsManager('predictions.db')
     
     df_original, df_pred, df_test = pred_manager.get_prediction(pred_name)
@@ -11,12 +11,19 @@ def plot_prediction(pred_name, pred_manager):
     df_pred['ds'] = pd.to_datetime(df_pred['ds'])
     df_test['ds'] = pd.to_datetime(df_test['ds'])
 
-    df_combined = pd.merge(df_original[['ds', 'y']], df_pred[['ds', 'XGBRegressor']], on='ds', how='outer', suffixes=('_orig', '_pred'))
-    df_combined = pd.merge(df_combined, df_test[['ds', 'XGBRegressor']], on='ds', how='outer', suffixes=('', '_test'))
+    df_combined = pd.merge(df_original[['ds', 'y']], df_pred[['ds', model_name]], on='ds', how='outer', suffixes=('_orig', '_pred'))
+    df_combined = pd.merge(df_combined, df_test[['ds', model_name]], on='ds', how='outer', suffixes=('', '_test'))
 
     df_combined.set_index('ds', inplace=True)
 
     st.line_chart(df_combined, width=0, height=0)
+    plot_residuals(df_combined, model_name)
+
+def plot_residuals(df_combined, model_name):
+    st.title('Resíduos da Previsão')
+    
+    df_combined['residuals'] = df_combined['y'] - df_combined[f'{model_name}_test']
+    st.line_chart(df_combined[['residuals']], width=0, height=0)
 
 def bar_chart_states(pred_manager):
     st.title('Vendas totais por estado')
@@ -76,7 +83,10 @@ def main():
 
     option = st.sidebar.selectbox("Selecione uma Base de Dados para previsão", list_dfs)
 
-    plot_prediction(option, pred_manager)
+    model_options = ['AutoARIMA', 'ETS', 'Theta', 'LGBMRegressor', 'XGBRegressor', 'LinearRegression']
+    model_option = st.sidebar.selectbox("Selecione um Modelo de Previsão", model_options)
+
+    plot_prediction(option, model_option, pred_manager)
 
     cat_plots_options = ['Vendas por Estado', 'Vendas por Loja', 'Vendas por Categoria']
     cat_option = st.sidebar.selectbox("Selecione uma opção para o total de vendas", cat_plots_options)
