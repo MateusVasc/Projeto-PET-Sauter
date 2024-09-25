@@ -5,7 +5,6 @@ class PredictionsManager:
     def __init__(self, db_path):
         try:
             self.db = sqlite3.connect(db_path)
-            print(f'Banco de dados conectado: {db_path}')
         except sqlite3.Error as e:
             print(f"Erro ao conectar ao banco de dados: {e}")
             self.db = None
@@ -39,9 +38,11 @@ class PredictionsManager:
             return None
         
         pred_name = f'pred_{series_name}'
+        test_name = f'test_{series_name}'
 
         query_string = f'SELECT * FROM {series_name}'
         query_string_pred = f'SELECT * FROM {pred_name}'
+        query_string_test = f'SELECT * FROM {test_name}'
 
         try:
             series = pd.read_sql_query(query_string, self.db)
@@ -49,8 +50,11 @@ class PredictionsManager:
             
             series_pred = pd.read_sql_query(query_string_pred, self.db)
             series_pred['ds'] = pd.to_datetime(series_pred['ds'])
+
+            series_test = pd.read_sql_query(query_string_test, self.db)
+            series_test['ds'] = pd.to_datetime(series_test['ds'])
             
-            return series, series_pred
+            return series, series_pred, series_test
         
         except pd.io.sql.DatabaseError as e:
             print(f"Erro ao executar a consulta: {e}")
@@ -60,13 +64,12 @@ class PredictionsManager:
             return None
 
     def get_df_names(self):
-        cursor = self.db.cursor()  # Create a cursor object
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")  # Execute query to get table names
+        cursor = self.db.cursor() 
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
 
-        names = cursor.fetchall()  # Fetch all results, will be a list of tuples
+        names = cursor.fetchall() 
 
-        # Extract and filter table names
-        table_names = [name[0] for name in names if 'pred' not in name[0]]
+        table_names = [name[0] for name in names if not (name[0].startswith('test_') or name[0].startswith('pred'))]
         
         return table_names 
 
@@ -79,3 +82,33 @@ class PredictionsManager:
                 print(f"Erro ao fechar a conexão: {e}")
         else:
             print('Nenhuma conexão para fechar')
+
+    def add_table(self, df, table_name):
+        if self.db is None:
+            print("Conexão com o banco de dados não está estabelecida.")
+            return
+        
+        try:
+            df.to_sql(table_name, self.db, index=False, if_exists='replace')
+            print(f"Tabela '{table_name}' adicionada com sucesso.")
+        except sqlite3.Error as e:
+            print(f"Erro ao adicionar a tabela: {e}")
+        except Exception as e:
+            print(f"Erro inesperado: {e}")
+
+    def get_table(self, table_name):
+        if self.db is None:
+            print("Conexão com o banco de dados não está estabelecida.")
+            return None
+        
+        query_string = f'SELECT * FROM {table_name}'
+        
+        try:
+            df = pd.read_sql_query(query_string, self.db)
+            return df
+        except pd.io.sql.DatabaseError as e:
+            print(f"Erro ao executar a consulta: {e}")
+            return None
+        except Exception as e:
+            print(f"Erro inesperado: {e}")
+            return None

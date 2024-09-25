@@ -1,31 +1,113 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 from PredictionsManager import PredictionsManager
 
-def plot_prediction(pred_name, pred_manager):
+def plot_prediction(pred_name, model_name, pred_manager):
     pred_manager = PredictionsManager('predictions.db')
     
-    df_original, df_pred = pred_manager.get_prediction(pred_name)
+    df_original, df_pred, df_test = pred_manager.get_prediction(pred_name)
 
     df_original['ds'] = pd.to_datetime(df_original['ds'])
     df_pred['ds'] = pd.to_datetime(df_pred['ds'])
+    df_test['ds'] = pd.to_datetime(df_test['ds'])
 
-    df_combined = pd.merge(df_original[['ds', 'y']], df_pred[['ds', 'LinearRegression']], on='ds', how='outer', suffixes=('_orig', '_pred'))
+    df_combined = pd.merge(df_original[['ds', 'y']], df_pred[['ds', model_name]], on='ds', how='outer', suffixes=('_orig', '_pred'))
+    df_combined = pd.merge(df_combined, df_test[['ds', model_name]], on='ds', how='outer', suffixes=('', '_test'))
 
-    df_pred.sort_values(by='ds', inplace=True)
+    df_combined.set_index('ds', inplace=True)
 
-    st.line_chart(df_combined.set_index('ds'), width=0, height=0)
+    st.line_chart(df_combined, width=0, height=0)
+    plot_residuals(df_combined, model_name)
+
+def plot_residuals(df_combined, model_name):
+    st.title('Resíduos da Previsão')
+    
+    df_combined['residuals'] = df_combined['y'] - df_combined[f'{model_name}_test']
+    st.line_chart(df_combined[['residuals']], width=0, height=0)
+
+def bar_chart_states(pred_manager):
+    st.title('Vendas totais por estado')
+
+    df = pred_manager.get_table('tabela_estados')
+    df = df.set_index('state_id')
+
+    st.bar_chart(df)
+
+def bar_chart_stores(pred_manager):
+    st.title('Vendas totais por loja')
+
+    df = pred_manager.get_table('tabela_lojas')
+    df = df.set_index('store_id')
+
+    st.bar_chart(df)
+
+def bar_chart_categorys(pred_manager):
+    st.title('Vendas totais por categoria')
+
+    df = pred_manager.get_table('tabela_categorias')
+    df = df.set_index('cat_id')
+
+    st.bar_chart(df)
+
+def bar_chart_foods(pred_manager):
+    st.title('Top 10 itens alimentícios')
+
+    df = pred_manager.get_table('tabela_comidas')
+    df = df.set_index('id')
+
+    st.bar_chart(df)
+
+def bar_chart_hobbies(pred_manager):
+    st.title('Top 10 Itens de Hobby')
+
+    df = pred_manager.get_table('tabela_hobbies')
+    df = df.set_index('id')
+
+    st.bar_chart(df)
+
+def bar_chart_household(pred_manager):
+    st.title('Top 10 Itens de Casa')
+
+    df = pred_manager.get_table('tabela_casa')
+    df = df.set_index('id')
+    
+    st.bar_chart(df)
 
 def main():
-    st.title("User Dashboard")
+    st.title("Previsão de Vendas")
     st.sidebar.title("Menu")
 
     pred_manager = PredictionsManager('predictions.db')
 
-    option = st.sidebar.selectbox("Select a section", pred_manager.get_df_names())
-    
-    plot_prediction(option, pred_manager)
+    list_dfs = pred_manager.get_df_names()
+
+    option = st.sidebar.selectbox("Selecione uma Base de Dados para previsão", list_dfs)
+
+    model_options = ['AutoARIMA', 'ETS', 'Theta', 'LGBMRegressor', 'XGBRegressor', 'LinearRegression']
+    model_option = st.sidebar.selectbox("Selecione um Modelo de Previsão", model_options)
+
+    plot_prediction(option, model_option, pred_manager)
+
+    cat_plots_options = ['Vendas por Estado', 'Vendas por Loja', 'Vendas por Categoria']
+    cat_option = st.sidebar.selectbox("Selecione uma opção para o total de vendas", cat_plots_options)
+
+    if cat_option == 'Vendas por Estado':
+        bar_chart_states(pred_manager)
+    elif cat_option == 'Vendas por Loja':
+        bar_chart_stores(pred_manager)
+    elif cat_option == 'Vendas por Categoria':
+        bar_chart_categorys(pred_manager)
+
+    top_10_options = ['Itens Alimentícios', 'Itens de Hobby', 'Itens de Casa']
+    top_10_option = st.sidebar.selectbox("Selecione uma opção para os 10 itens mais vendidos", top_10_options)
+
+    if top_10_option == 'Itens Alimentícios':
+        bar_chart_foods(pred_manager)
+    elif top_10_option == 'Itens de Hobby':
+        bar_chart_hobbies(pred_manager)
+    elif top_10_option == 'Itens de Casa':
+        bar_chart_household(pred_manager)
+
 
 if __name__ == "__main__":
     main()
